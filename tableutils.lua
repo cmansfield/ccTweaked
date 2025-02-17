@@ -1,6 +1,6 @@
 --[[
     tableutils.lua
-    Version: 0.5.0
+    Version: 0.5.2
     LUA Version: 5.2
     Author: AirsoftingFox
     Last Updated: 2025-02-10
@@ -92,6 +92,33 @@ end
 ---@return boolean
 function tableutils.isList(t)
     return t[1] ~= nil
+end
+
+---@generic v
+---@param t table<v>
+---@param i integer
+---@param k? integer
+---@return table<v>
+function tableutils.sub(t, i, k)
+    if tableutils.isDict(t) then return t end
+    if not k then k = #t end
+    local r = {}
+    for l = i, k do
+        table.insert(r, t[l])
+    end
+    return r
+end
+
+---@param t table
+---@return table
+function tableutils.reverse(t)
+    if tableutils.isDict(t) then return t end
+    local r, k = {}, 1
+    for i = #t, 1, -1 do
+        r[k] = t[i]
+        k = k + 1
+    end
+    return r
 end
 
 --[=====[

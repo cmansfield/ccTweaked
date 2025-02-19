@@ -1,6 +1,6 @@
 --[[
     SimpleChat.lua
-    Version: 0.9.0
+    Version: 0.9.1
     LUA Version: 5.2
     Author: AirsoftingFox
     Last Updated: 2025-02-16
@@ -55,6 +55,18 @@ local function saveHistory()
     config.save('chat_history', tableutils.sub(chat, math.max(#chat - maxHistoryCount, 1)))
 end
 
+local function removeMcChatFormatting(out)
+    local iter = unicode.striter(out)
+    local c = iter()
+    local ret = ''
+    while c do
+        if string.byte(c) == 167 then iter()
+        else ret = ret .. c end
+        c = iter()
+    end
+    return ret
+end
+
 local function splitMessage(out)
     local split = {}
     local tTxt, lastSpace
@@ -77,6 +89,7 @@ local function displayMessages()
 
     while entry and rowText do
         local out = entry.player .. ' > ' .. entry.message
+        out = removeMcChatFormatting(out)
         out = unicode.removeUnicode(out)
         local split = splitMessage(out)
         split = tableutils.reverse(split)

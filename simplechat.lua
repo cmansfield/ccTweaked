@@ -1,6 +1,6 @@
 --[[
-    simpleChat.lua
-    Version: 0.8.0
+    SimpleChat.lua
+    Version: 0.9.0
     LUA Version: 5.2
     Author: AirsoftingFox
     Last Updated: 2025-02-16
@@ -16,11 +16,12 @@
 ]]
 
 local tableutils = require 'tableutils'
+local unicode = require 'unicode'
 local config = require 'config'
 
 local yOffset = 2
 local padding = 6
-local maxRowCharCount = 56
+local maxRowCharCount = 60
 local maxHistoryCount = 100
 local maxMessagesDisplayed = 13
 
@@ -31,7 +32,9 @@ local colors = {
 
 local modules = peripheral.find("neuralInterface")
 if not modules.hasModule("plethora:chat") then error("The chat recorder is missing", 0) end
+if not modules.hasModule("plethora:introspection") then error("The introspection scanner is missing", 0) end
 if not modules.hasModule("plethora:sensor") then error("The entity scanner is missing", 0) end
+if not modules.hasModule("plethora:glasses") then error("The overlay glasses are missing", 0) end
 
 local playerName = modules.getMetaOwner().name
 local chat = tableutils.stream({})
@@ -73,7 +76,9 @@ local function displayMessages()
     local dI, rowText = next(canvasTxtElems)
 
     while entry and rowText do
-        local split = splitMessage(entry.player .. ' > ' .. entry.message)
+        local out = entry.player .. ' > ' .. entry.message
+        out = unicode.removeUnicode(out)
+        local split = splitMessage(out)
         split = tableutils.reverse(split)
         for _, message in ipairs(split) do
             rowText.setText(message)

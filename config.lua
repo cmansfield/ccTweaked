@@ -8,6 +8,13 @@ function config.save(filename, data)
     file.close()
 end
 
+function config.append(filename, data)
+    local file = fs.open('./configs/' .. filename, 'a')
+    file.write(textutils.serialize(data))
+    file.write('\n')
+    file.close()
+end
+
 function config.load(filename)
     local path = './configs/' .. filename
     if not fs.exists(path) then return end

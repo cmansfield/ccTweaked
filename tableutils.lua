@@ -1,6 +1,6 @@
 --[[
     tableutils.lua
-    Version: 0.5.2
+    Version: 0.6.5
     LUA Version: 5.2
     Author: AirsoftingFox
     Last Updated: 2025-02-10
@@ -77,6 +77,25 @@ function tableutils.append(t1, t2)
 end
 
 ---@param t table
+---@return table
+function tableutils.copy(t)
+    local nt = {}
+    for k, v in pairs(t) do
+        if type(v) == 'table' then nt[k] = tableutils.copy(v) else nt[k] = v end
+    end
+    return nt
+end
+
+---@param t1 table<any>
+---@param t2 table<any>
+function tableutils.union(t1, t2)
+    for k, v in pairs(t2) do
+        if type(v) == 'table' then t1[k] = tableutils.copy(v)
+        else t1[k] = v end
+    end
+end
+
+---@param t table
 ---@return boolean
 function tableutils.isEmpty(t)
     return next(t) == nil
@@ -131,9 +150,9 @@ end
     local result = tableUtils.stream(dict)
         .allMatch(function (_, age) return age < 30 end)
 ]=====]
----@generic T
----@param t table<integer,T>|table<T>
----@param func (fun(i: integer, v: T): boolean)|(fun(v: T): boolean)
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): boolean)|(fun(v: T): boolean)
 ---@return boolean
 function tableutils.allMatch(t, func)
     local all = true
@@ -160,9 +179,9 @@ end
     local result = tableUtils.stream(dict)
         .anyMatch(function (_, age) return age > 25 end)
 ]=====]
----@generic T
----@param t table<integer,any>|table<T>
----@param func (fun(i: integer, v: T): boolean)|(fun(v: T): boolean)
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): boolean)|(fun(v: T): boolean)
 ---@return boolean
 function tableutils.anyMatch(t, func)
     local isDict = tableutils.isDict(t)
@@ -186,9 +205,9 @@ end
     local result = tableUtils.stream(dict)
         .findFirst(function (name, age) return name == 'John' end)
 ]=====]
----@generic T
----@param t table<integer,T>|table<T>
----@param func (fun(i: integer, v: T): T)|(fun(v: T): T)
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): T)|(fun(v: T): T)
 ---@return T
 function tableutils.findFirst(t, func)
     local isDict = tableutils.isDict(t)
@@ -212,10 +231,10 @@ end
     local result = tableUtils.stream(dict)
         .filter(function (_, age) return age <= 25 end)
 ]=====]
----@generic T
----@param t table<integer,T>|table<T>
----@param func (fun(i: integer, v: T): T)|(fun(v: T): T)
----@return table<integer,T>|table<T>
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): T)|(fun(v: T): T)
+---@return table<K,T>|table<T>
 function tableutils.filter(t, func)
     local filtered = {}
     local isDict = tableutils.isDict(t)
@@ -239,15 +258,29 @@ end
     local names = tableUtils.stream(dict)
         .map(function (name, age) return name end)
 ]=====]
----@generic T
----@param t table<integer,T>|table<T>
----@param func (fun(i: integer, v: T): T)|(fun(v: T): T)
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): T)|(fun(v: T): T)
 ---@return table<any,any>|table<any>
 function tableutils.map(t, func)
     local mapped = {}
     local isDict = tableutils.isDict(t)
     for k, v in pairs(t) do
         table.insert(mapped, isDict and func(k, v) or func(v))
+    end
+    return mapped
+end
+
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(i: integer, k: K, v: T): T)|(fun(i: integer, v: T): T)
+---@return table<any,any>|table<any>
+function tableutils.mapi(t, func)
+    local mapped, i = {}, 1
+    local isDict = tableutils.isDict(t)
+    for k, v in pairs(t) do
+        table.insert(mapped, isDict and func(i, k, v) or func(i, v))
+        i = i + 1
     end
     return mapped
 end
@@ -268,10 +301,10 @@ end
             {names = {}, totalAge = 0}
         )
 ]=====]
----@generic T, K
----@param t table<integer,T>|table<T>
----@param func (fun(acc: K, i: integer, v: T): K)|(fun(acc: K, v: T): K)
----@return any
+---@generic T, K, A
+---@param t table<K,T>|table<T>
+---@param func (fun(acc: A, k: K, v: T): A)|(fun(acc: A, v: T): A)
+---@return A
 function tableutils.reduce(t, func, acc)
     local isDict = tableutils.isDict(t)
     for k, v in pairs(t) do
@@ -290,9 +323,9 @@ end
     local result = tableUtils.stream(dict)
         .find(function (name, age) return name == 'Jane' end)
 ]=====]
----@generic T
----@param t table<integer,T>|table<T>
----@param func (fun(i: integer, v: T): T)|(fun(v: T): T)
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): T)|(fun(v: T): T)
 ---@return T?
 function tableutils.find(t, func)
     local isDict = tableutils.isDict(t)
@@ -305,17 +338,47 @@ function tableutils.find(t, func)
     end
 end
 
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): T)|(fun(v: T): T)
+---@return integer?
+function tableutils.findi(t, func)
+    local isDict = tableutils.isDict(t)
+    local i = 1
+    for k, v in pairs(t) do
+        if isDict then
+            if func(k, v) then return i end
+        else
+            if func(v) then return i end
+        end
+        i = i + 1
+    end
+end
+
+---@generic T, K
+---@param t table<K,T>|table<T>
+---@param func (fun(k: K, v: T): nil)|(fun(v: T): nil)
+function tableutils.forEach(t, func)
+    local isDict = tableutils.isDict(t)
+    for k, v in pairs(t) do
+        if isDict then func(k, v) else func(v) end
+    end
+end
+
 function tableutils.stream(t)
     t = t or {}
     setmetatable(t, {
         __index = {
             find =      function (obj) return tableutils.find(t, obj) end,
+            findi =     function (obj) return tableutils.findi(t, obj) end,
             map =       function (func) return tableutils.stream(tableutils.map(t, func)) end,
+            mapi =      function (func) return tableutils.stream(tableutils.mapi(t, func)) end,
             filter =    function (func) return tableutils.stream(tableutils.filter(t, func)) end,
             findFirst = function (func) return tableutils.findFirst(t, func) end,
             allMatch =  function (func) return tableutils.allMatch(t, func) end,
             anyMatch =  function (func) return tableutils.anyMatch(t, func) end,
-            reduce =    function (func, acc) return tableutils.reduce(t, func, acc) end
+            reduce =    function (func, acc) return tableutils.reduce(t, func, acc) end,
+            forEach =   function (func) return tableutils.forEach(t, func) end
         }
     })
     return t

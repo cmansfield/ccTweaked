@@ -5,7 +5,11 @@
     Author: AirsoftingFox
     Last Updated: 2025-02-21
     CC: Tweaked Version: 1.89.2
-    Description: 
+    Description: This library is used to bring object oriented programming to LUA tables
+        You can define classes with default values and behavior, instanciate a class with 
+        overriding values, and create sub-classes that inherit all of the values and 
+        functions of their parent classes. Multiple parent classes can be defined for a 
+        sub-class.
 ]]
 
 

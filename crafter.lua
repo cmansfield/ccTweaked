@@ -1,11 +1,27 @@
+--[[
+    Crafter.lua
+    Version: 0.4.2
+    LUA Version: 5.2
+    Author: AirsoftingFox
+    Last Updated: 2025-03-06
+    CC: Tweaked Version: 1.89.2
+    Description: This was meant to be a quick and dirty one-off for crafting 
+        60k coolant, but if you modify the recipes it should craft just about
+        anything you might need. The recipes make up of the raw item name 
+        with the slots that item can be moved into in the auto workbench, and
+        the quantity is the stack amount. 
+]]
 
 local tableutils = require 'tableutils'
 local config = require 'config'
+
+local outputProduct = 'item.reactorCoolantSix'
 
 local containerNames = tableutils.stream({
     'chest',
     'storage',
     'condenser',
+    'black_hole_unit',
 })
 
 local coolantRecipe = {
@@ -76,7 +92,7 @@ local function loadWorkbenches()
                 local display, output = getOutput(name)
                 return {name = name, output = output, display = display}
             end
-        ).map(function(wb) wb.recipe = requiredWorkbenches[wb.display] return wb end)
+        ).map(function(wb) wb.recipe = tableutils.copy(requiredWorkbenches[wb.display]) return wb end)
 end
 
 local function loadContainers()
@@ -85,7 +101,8 @@ local function loadContainers()
     return peripheralNames
         .filter(isContainerFilter)
         .map(function(name)
-                return {name = name, size = peripheral.call(name, 'size'), contains = contains(name)}
+                local size = name:find('ender_chest') and 1 or peripheral.call(name, 'size')
+                return {name = name, size = size, contains = contains(name)}
             end
         )
 end
@@ -115,15 +132,17 @@ local function run(workbench)
     return function ()
         while true do
             for ingredient, meta in pairs(workbench.recipe) do
-                local fromObj = tableutils.stream(sources)
-                    .findFirst(function (s) return s.contains == ingredient end)
-                if fromObj.slot then
-                    transferItem(fromObj.name, workbench.name, meta.slots, fromObj.slot, meta.quantity)
-                else
-                    local list = peripheral.call(fromObj.name, 'list')
-                    for fSlot, _ in pairs(list) do
-                        transferItem(fromObj.name, workbench.name, meta.slots, fSlot, meta.quantity)
-                        break
+                local fromObjs = tableutils.stream(sources)
+                    .filter(function (s) return s.contains == ingredient end)
+                for _, fromObj in ipairs(fromObjs) do
+                    if fromObj.slot then
+                        transferItem(fromObj.name, workbench.name, meta.slots, fromObj.slot, meta.quantity)
+                    else
+                        local list = peripheral.call(fromObj.name, 'list')
+                        for fSlot, _ in pairs(list) do
+                            transferItem(fromObj.name, workbench.name, meta.slots, fSlot, meta.quantity)
+                            break
+                        end
                     end
                 end
             end
@@ -134,10 +153,10 @@ end
 
 local function storeProduct()
     local fromObj = tableutils.stream(workbenches)
-        .findFirst(function (s) return s.output == 'item.reactorCoolantSix' end)
+        .findFirst(function (s) return s.output == outputProduct end)
     local toObj = tableutils.stream(sources)
         .filter(function (s) return containerNames.anyMatch(function (c) return s.name:find(c) end) end)
-        .findFirst(function (s) return s.contains == 'item.reactorCoolantSix' end)
+        .findFirst(function (s) return s.contains == outputProduct end)
     if not toObj then
         toObj = tableutils.stream(sources)
             .filter(function (s) return containerNames.anyMatch(function (c) return s.name:find(c) end) end)

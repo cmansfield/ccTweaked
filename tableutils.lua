@@ -1,9 +1,9 @@
 --[[
     tableutils.lua
-    Version: 0.6.5
+    Version: 0.6.9
     LUA Version: 5.2
     Author: AirsoftingFox
-    Last Updated: 2025-02-10
+    Last Updated: 2025-03-11
     CC: Tweaked Version: 1.89.2
     Description: A collection of table utils to help with navigating, modifying,
         or displaying lua tables. The most important thing gained by using these
@@ -25,6 +25,21 @@
 ]]
 
 local tableutils = {}
+
+function tableutils.stringifyTable(t, indentation)
+    local out = ''
+    for k, v in pairs(t) do
+        local i = indentation or 0
+        if type(v) == 'table' then
+            out = out .. string.rep(' ', i) .. k .. ':\n' .. tableutils.stringifyTable(v, i + 2) .. '\n'
+        elseif type(v) == 'thread' then out = out .. string.rep(' ', i) .. k .. ': ' .. tostring(v) .. '\n'
+        elseif type(v) == 'boolean' then out = out .. string.rep(' ', i) .. k .. ': ' .. (v and 'true' or 'false') .. '\n'
+        else
+            out = out .. string.rep(' ', i) .. k .. ': ' .. (type(v) == 'function' and 'function' or v) .. '\n'
+        end
+    end
+    return out
+end
 
 function tableutils.printTable(t, indentation)
     for k, v in pairs(t) do

@@ -2,9 +2,12 @@
 
 local config = {}
 
-function config.save(filename, data)
+---@param filename string
+---@param data table | string
+---@param isString? boolean
+function config.save(filename, data, isString)
     local file = fs.open('./configs/' .. filename, 'w')
-    file.write(textutils.serialize(data))
+    file.write(isString and data or textutils.serialize(data))
     file.close()
 end
 

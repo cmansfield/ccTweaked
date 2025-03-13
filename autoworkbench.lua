@@ -1,6 +1,6 @@
 --[[
     autoworkbench.lua
-    Version: 0.9.6
+    Version: 0.9.7
     LUA Version: 5.2
     Author: AirsoftingFox
     Last Updated: 2025-03-11
@@ -28,6 +28,10 @@
 
             Faster crafting: Remember, you can speed up the Auto Workbenches by 
         attachingwith flux power to them.
+
+        TODO:
+            Fix the issue with empty workbenches
+            If a workbench's craft has changed then replace the indexed value
 ]]
 
 local tableutils = require 'tableutils'
@@ -294,6 +298,10 @@ local function startJobs(workbenches, outputProduct)
     deleteCurrentJob()
 end
 
+local function isNotEmptyWorkbench(c)
+    return not (c.name:find('autoworkbench') and not c.contains.rawName)
+end
+
 local function refreshIndex()
     local workbenches = indexedSources
         .filter(function (s) return s.contains and s.contains.rawName and s.name:find('autoworkbench') end)
@@ -301,11 +309,12 @@ local function refreshIndex()
     indexedSources = tableutils.stream(peripheral.getNames())
         .filter(isContainer)
         .map(createSource)
-        .map(function (s) return workbenches[s.name] or s end)
+        .map(function (s) return (s.contains.rawName and s) or workbenches[s.name] or s end)
+        .filter(isNotEmptyWorkbench)
     config.save('sources', indexedSources)
 end
 
-local function refreshAction(displayName)
+local function refreshAction(_)
     breakout = false
     displayLoadingScreen('Indexing Containers', 'Checking all containers on the network and updating sources')
     refreshIndex()
